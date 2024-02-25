@@ -1,6 +1,6 @@
 import React from "react";
 import "./App.css";
-import WebcamCapture from "./webcamCapture";
+import WebcamCapture from "./WebcamCapture";
 
 function App() {
   return (
