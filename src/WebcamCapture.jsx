@@ -1,0 +1,145 @@
+import React, { useRef, useState, useCallback, Fragment } from "react";
+import Webcam from "react-webcam";
+import Tesseract from "tesseract.js";
+
+const WebcamCapture = () => {
+  const webcamRef = useRef(null);
+  const [imgSrc, setImgSrc] = useState(null);
+  const [webcamError, setWebcamError] = useState(false);
+  const [extractedData, setExtractedData] = useState({
+    firstName: "",
+    lastName: "",
+    address: "",
+    issuanceDate: "",
+    expirationDate: "",
+  });
+
+  const parseDriverLicenseData = (text) => {
+    const data = {
+      firstName: "",
+      lastName: "",
+      address: "",
+      issuanceDate: "",
+      expirationDate: "",
+    };
+
+    const lines = text.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes("FN")) {
+        data.firstName = lines[i].split("FN")[1].trim();
+      }
+      if (lines[i].includes("LN")) {
+        data.lastName = lines[i].split("LN")[1].trim();
+        // Assuming the address is immediately below the last name
+        if (
+          lines[i + 1] &&
+          !lines[i + 1].includes("EXP") &&
+          !lines[i + 1].includes("ISS")
+        ) {
+          data.address = lines[i + 1].trim();
+        }
+      }
+      if (lines[i].includes("EXP")) {
+        data.expirationDate = lines[i].split("EXP")[1].trim();
+      }
+      if (lines[i].includes("ISS")) {
+        data.issuanceDate = lines[i].split("ISS")[1].trim();
+      }
+    }
+
+    return data;
+  };
+
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setImgSrc(imageSrc);
+
+    Tesseract.recognize(imageSrc, "eng", {
+      logger: (m) => console.log(m),
+    }).then(({ data: { text } }) => {
+      console.log(text);
+      const extractedData = parseDriverLicenseData(text);
+      setExtractedData(extractedData);
+    });
+  }, [webcamRef]);
+
+  return (
+    <Fragment>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "50px",
+        }}
+        className="webcam-container" // Add this line
+      >
+        <div
+          style={{ width: "400px", display: "flex", justifyContent: "center" }}
+        >
+          {!webcamError ? (
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              width="100%"
+              onUserMediaError={() => setWebcamError(true)}
+            />
+          ) : (
+            <div className="DefaultBox">Webcam access denied</div>
+          )}
+        </div>
+
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt="Captured"
+            style={{
+              width: "400px",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          />
+        ) : (
+          <div className="DefaultBox">Click capture photo</div>
+        )}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <button
+          onClick={capture}
+          style={{ marginTop: "50px", marginBottom: "0px" }}
+        >
+          Capture photo
+        </button>
+        <div style={{ marginTop: "20px", marginBottom: "50px" }}>
+          <h3>Extracted Information</h3>
+          <p>
+            <strong>First Name:</strong> {extractedData.firstName}
+          </p>
+          <p>
+            <strong>Last Name:</strong> {extractedData.lastName}
+          </p>
+          <p>
+            <strong>Address:</strong> {extractedData.address}
+          </p>
+          <p>
+            <strong>Issuance Date:</strong> {extractedData.issuanceDate}
+          </p>
+          <p>
+            <strong>Expiration Date:</strong> {extractedData.expirationDate}
+          </p>
+        </div>
+      </div>
+    </Fragment>
+  );
+};
+
+export default WebcamCapture;
