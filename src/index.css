@@ -14,8 +14,8 @@
 }
 
 .DefaultBox {
-  width: 400px;
-  height: 300px;
+  width: 30vw;
+  aspect-ratio: 4/3;
   background-color: LightSlateGray;
   display: flex;
   justify-content: center;
@@ -68,6 +68,16 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+
+.webcam-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -81,7 +91,18 @@ button:focus-visible {
   }
 }
 
+.camera{
+    width: 30vw;
+    display: flex;
+    justify-content: center;
+}
 @media (max-width: 800px) {
+  .camera{
+    width: 80vw
+  }
+  .DefaultBox{
+    width: 80vw;
+  }
 
   button {
     padding: 30px; /* Make buttons larger */

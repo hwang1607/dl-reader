@@ -65,26 +65,15 @@ const WebcamCapture = () => {
 
   return (
     <Fragment>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "50px",
-        }}
-        className="webcam-container" // Add this line
-      >
-        <div
-          style={{ width: "400px", display: "flex", justifyContent: "center" }}
-        >
+      <div className="webcam-container">
+        <div className="camera">
           {!webcamError ? (
             <Webcam
               audio={false}
               ref={webcamRef}
               screenshotFormat="image/jpeg"
               width="100%"
+              height="100%"
               onUserMediaError={() => setWebcamError(true)}
             />
           ) : (
@@ -93,15 +82,7 @@ const WebcamCapture = () => {
         </div>
 
         {imgSrc ? (
-          <img
-            src={imgSrc}
-            alt="Captured"
-            style={{
-              width: "400px",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          />
+          <img src={imgSrc} alt="Captured" className="camera" />
         ) : (
           <div className="DefaultBox">Click capture photo</div>
         )}
