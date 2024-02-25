@@ -82,9 +82,7 @@ button:focus-visible {
 }
 
 @media (max-width: 800px) {
-  .webcam-container {
-    flex-direction: column !important;
-  }
+
   button {
     padding: 30px; /* Make buttons larger */
     font-size: 25px; /* Increase font size for better readability */
