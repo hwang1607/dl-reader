@@ -54,9 +54,7 @@ const WebcamCapture = () => {
     const imageSrc = webcamRef.current.getScreenshot();
     setImgSrc(imageSrc);
 
-    Tesseract.recognize(imageSrc, "eng", {
-      logger: (m) => console.log(m),
-    }).then(({ data: { text } }) => {
+    Tesseract.recognize(imageSrc, "eng", {}).then(({ data: { text } }) => {
       console.log(text);
       const extractedData = parseDriverLicenseData(text);
       setExtractedData(extractedData);
@@ -65,12 +63,19 @@ const WebcamCapture = () => {
 
   return (
     <Fragment>
+      <button
+        onClick={capture}
+        style={{ marginTop: "30px", marginBottom: "50px" }}
+      >
+        Capture photo
+      </button>
       <div className="webcam-container">
         <div className="camera">
           {!webcamError ? (
             <Webcam
               audio={false}
               ref={webcamRef}
+              videoConstraints={{ facingMode: "environment" }} // This line requests the rear camera
               screenshotFormat="image/jpeg"
               width="100%"
               height="100%"
@@ -94,12 +99,6 @@ const WebcamCapture = () => {
           alignItems: "center",
         }}
       >
-        <button
-          onClick={capture}
-          style={{ marginTop: "50px", marginBottom: "0px" }}
-        >
-          Capture photo
-        </button>
         <div style={{ marginTop: "20px", marginBottom: "50px" }}>
           <h3>Extracted Information</h3>
           <p>
