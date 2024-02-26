@@ -14,6 +14,25 @@ const WebcamCapture = () => {
     expirationDate: "",
   });
 
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImgSrc(e.target.result); // Display the selected image
+        Tesseract.recognize(e.target.result, "eng", {}).then(
+          ({ data: { text } }) => {
+            console.log(text);
+            const extractedData = parseDriverLicenseData(text);
+            setExtractedData(extractedData);
+          }
+        );
+      };
+      reader.readAsDataURL(file);
+      event.target.value = "";
+    }
+  };
+
   const parseDriverLicenseData = (text) => {
     const data = {
       firstName: "",
@@ -65,11 +84,23 @@ const WebcamCapture = () => {
     <Fragment>
       <button
         onClick={capture}
-        style={{ marginTop: "30px", marginBottom: "50px" }}
+        style={{ marginTop: "30px", marginBottom: "30px" }}
       >
         Capture photo
       </button>
-      <div className="webcam-container">
+      <button
+        style={{ marginTop: "0px", marginBottom: "50px" }}
+        onClick={() => document.getElementById("fileInput").click()}
+      >
+        Upload photo
+      </button>
+      <input
+        type="file"
+        id="fileInput"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+      <div className="content-container">
         <div className="camera">
           {!webcamError ? (
             <Webcam
@@ -89,7 +120,7 @@ const WebcamCapture = () => {
         {imgSrc ? (
           <img src={imgSrc} alt="Captured" className="camera" />
         ) : (
-          <div className="DefaultBox">Click capture photo</div>
+          <div className="DefaultBox">Capture or upload photo</div>
         )}
       </div>
       <div
