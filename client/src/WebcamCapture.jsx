@@ -59,9 +59,11 @@ const WebcamCapture = () => {
       const gray = new cv.Mat();
       cv.cvtColor(normalized, gray, cv.COLOR_RGBA2GRAY);
   
-      //  Noise Removal 
-      const denoised = new cv.Mat();
-      cv.fastNlMeansDenoising(gray, denoised, 10, 7, 21);
+      
+      //Noise Removal with Gaussian Blur
+      const blurred = new cv.Mat();
+      let ksize = new cv.Size(5, 5); // Kernel size
+      cv.GaussianBlur(gray, blurred, ksize, 0, 0, cv.BORDER_DEFAULT);
   
       //  Thresholding
       const thresholded = new cv.Mat();
