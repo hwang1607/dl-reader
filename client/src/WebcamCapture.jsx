@@ -57,9 +57,14 @@ const WebcamCapture = () => {
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-      // Apply adaptive mean thresholding
+      // Apply adaptive thresholding optimized for text extraction
       const dst = new cv.Mat();
-      cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 15, -2);
+      cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2);
+
+      // Apply opening to reduce noise, using a 3x3 kernel
+      const M = cv.Mat.ones(3, 3, cv.CV_8U);
+      const anchor = new cv.Point(-1, -1);
+      cv.morphologyEx(dst, dst, cv.MORPH_OPEN, M, anchor, 1, cv.BORDER_CONSTANT, cv.morphologyDefaultBorderValue());
 
       // Convert the thresholded image to RGBA format to display it using canvas
       const rgbaDst = new cv.Mat();
