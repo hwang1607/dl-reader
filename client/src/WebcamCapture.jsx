@@ -40,7 +40,7 @@ const WebcamCapture = () => {
     }
   };
 
-  const processImageToGrayscale = (imageSrc) => {
+  const processImageForOCR = (imageSrc) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
@@ -48,30 +48,38 @@ const WebcamCapture = () => {
       canvas.width = img.width;
       canvas.height = img.height;
       context.drawImage(img, 0, 0, img.width, img.height);
-
+  
       const src = cv.imread(canvas);
-
-      setOcrProcessing(true); // Set to true before starting OCR
-
-      // Convert the image to grayscale
+  
+      //  Normalization
+      let normalized = new cv.Mat();
+      cv.normalize(src, normalized, 0, 255, cv.NORM_MINMAX);
+  
+      //  Convert to Grayscale
       const gray = new cv.Mat();
-      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-      // // Apply Otsu's thresholding
-      // const dst = new cv.Mat();
-      // cv.threshold(gray, dst, 125, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
-
+      cv.cvtColor(normalized, gray, cv.COLOR_RGBA2GRAY);
+  
+      //  Noise Removal 
+      const denoised = new cv.Mat();
+      cv.fastNlMeansDenoising(gray, denoised, 10, 7, 21);
+  
+      //  Thresholding
+      const thresholded = new cv.Mat();
+      cv.threshold(denoised, thresholded, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+  
+  
       // Convert the thresholded image to RGBA format to display it using canvas
       const rgbaDst = new cv.Mat();
-      cv.cvtColor(gray, rgbaDst, cv.COLOR_GRAY2RGBA);
-
+      cv.cvtColor(thresholded, rgbaDst, cv.COLOR_GRAY2RGBA);
+  
       const processedImgData = new ImageData(
         new Uint8ClampedArray(rgbaDst.data),
         img.width,
         img.height
       );
-
+  
       context.putImageData(processedImgData, 0, 0);
+
       setImgSrc(canvas.toDataURL());
 
       // Perform OCR with Tesseract.js
