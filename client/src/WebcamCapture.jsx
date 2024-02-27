@@ -53,44 +53,9 @@ const WebcamCapture = () => {
 
       setOcrProcessing(true); // Set to true before starting OCR
 
-      // Convert image to grayscale
-      cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY);
-      
-      // Use Canny edge detection to find edges
-      const edges = new cv.Mat();
-      cv.Canny(src, edges, 50, 150, 3);
-      
-      // Detect lines using HoughLinesP
-      const lines = new cv.Mat();
-      cv.HoughLinesP(edges, lines, 1, Math.PI / 180, 50, 50, 10);
-      
-      // Calculate average angle of lines
-      let angleSum = 0;
-      let numAngles = 0;
-      for (let i = 0; i < lines.rows; ++i) {
-          const [x1, y1, x2, y2] = lines.data32S.subarray(i * 4, (i + 1) * 4);
-          const angle = Math.atan2(y2 - y1, x2 - x1) * 180.0 / Math.PI;
-          if (Math.abs(angle) < 45) { // Filter out near-vertical and near-horizontal lines
-              angleSum += angle;
-              numAngles++;
-          }
-      }
-      
-      let averageAngle = 0;
-      if (numAngles > 0) {
-          averageAngle = angleSum / numAngles;
-      }
-      
-      // Rotate image to correct skew
-      const center = new cv.Point(src.cols / 2, src.rows / 2);
-      const rotationMatrix = cv.getRotationMatrix2D(center, -averageAngle, 1);
-      const rotated = new cv.Mat();
-      cv.warpAffine(src, rotated, rotationMatrix, new cv.Size(src.cols, src.rows));
-      
-      // Replace 'src' with 'rotated' in the subsequent processing
-      src.delete(); // Delete the original source matrix
-      src = rotated; // Use the rotated image for further processing
-
+      // Convert the image to grayscale
+      const gray = new cv.Mat();
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
       // Apply Otsu's thresholding
       const dst = new cv.Mat();
