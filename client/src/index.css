@@ -20,9 +20,6 @@
   font-size: 30px;
 }
 
-
-
-
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -31,7 +28,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 
 
 p {
@@ -49,8 +45,8 @@ button {
   background-color: #f9f9f9;
   cursor: pointer;
   transition: border-color 0.25s;
+  color: black;
 }
-
 
 button:hover {
   border-color: #646cff;
@@ -59,7 +55,6 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
-
 
 .content-container {
   display: flex;
@@ -83,9 +78,6 @@ button:focus-visible {
   display: flex;
   justify-content: center;
 }
-
-
-
 
 @media (max-width: 800px) {
   .camera{
