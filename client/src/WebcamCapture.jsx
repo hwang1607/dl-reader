@@ -44,81 +44,64 @@ const WebcamCapture = () => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
       canvas.width = img.width;
       canvas.height = img.height;
+      const context = canvas.getContext("2d");
       context.drawImage(img, 0, 0, img.width, img.height);
   
       const src = cv.imread(canvas);
-      setOcrProcessing(true); // Indicate OCR processing is starting
+      setOcrProcessing(true); // Indicate OCR processing starts
   
-      // Convert the image to grayscale
+      // Convert to grayscale
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
   
-      // Apply edge detection to find contours
+      // Apply Gaussian Blur and Canny Edge Detection 
+      const blurred = new cv.Mat();
+      cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 1.5, 1.5, cv.BORDER_DEFAULT);
       const edges = new cv.Mat();
-      cv.Canny(gray, edges, 100, 200, 3, false);
-      let contours = new cv.MatVector();
-      let hierarchy = new cv.Mat();
+      cv.Canny(blurred, edges, 100, 200);
+  
+      // Find contours
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
       cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
   
-      // Find the largest contour and its bounding box
+      // Find the largest contour and its bounding rectangle
       let maxArea = 0;
-      let maxContour = null;
-      for (let i = 0; i < contours.size(); i++) {
-        const contour = contours.get(i);
-        const area = cv.contourArea(contour);
+      let bestRect = null;
+      for (let i = 0; i < contours.size(); ++i) {
+        const cnt = contours.get(i);
+        const area = cv.contourArea(cnt, false);
         if (area > maxArea) {
           maxArea = area;
-          maxContour = contour;
+          const rect = cv.boundingRect(cnt);
+          bestRect = rect;
         }
       }
   
-      if (maxContour != null) {
-        const boundingRect = cv.boundingRect(maxContour);
-        const x = boundingRect.x;
-        const y = boundingRect.y;
-        const width = boundingRect.width;
-        const height = boundingRect.height;
-  
-        // Crop the grayscale image using the bounding rectangle of the largest contour
-        const roi = gray.roi(new cv.Rect(x, y, width, height));
-  
-        // Use the cropped image for further processing
-        cv.imshow(canvas, roi); // Display the cropped grayscale image for verification
-        setImgSrc(canvas.toDataURL()); // Update the displayed image
-  
-        // Perform OCR with Tesseract.js on the cropped image
-        Tesseract.recognize(
-          canvas.toDataURL(),
-          "eng",
-          { logger: (m) => console.log(m) }
-        ).then(({ data: { text } }) => {
-          console.log("OCR Result:", text);
-          const parsedData = parseDriverLicenseData(text);
-          setExtractedData(parsedData); // Update state with parsed data
-          setOcrProcessing(false); // Indicate OCR processing is complete
-        }).catch((err) => {
-          console.error("Error during OCR:", err);
-          setOcrProcessing(false); // Handle errors in OCR processing
-        });
-  
-        roi.delete(); // Clean up the cropped Mat
+      if (bestRect) {
+        // Crop the grayscale image to the largest contour
+        const x = bestRect.x, y = bestRect.y, width = bestRect.width, height = bestRect.height;
+        const roi = new cv.Rect(x, y, width, height);
+        const cropped = gray.roi(roi);
+        // Use the cropped image with the existing processImageWithTesseract function
+        processImageWithTesseract(cropped, canvas, context);
       } else {
-        // If no contour is found, proceed with the original grayscale image
         processImageWithTesseract(gray, canvas, context);
       }
   
-      // Cleanup
+      // Clean up
       src.delete();
       gray.delete();
+      blurred.delete();
       edges.delete();
       contours.delete();
       hierarchy.delete();
     };
     img.src = imageSrc;
   };
+  
   
   const processImageWithTesseract = (grayImageMat, canvas, context) => {
     // Convert the grayscale image to RGBA format to display it using canvas
