@@ -54,19 +54,11 @@ const WebcamCapture = () => {
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-      // Apply adaptive Gaussian thresholding
+      // Apply Otsu's thresholding
       const dst = new cv.Mat();
-      cv.adaptiveThreshold(
-        gray,
-        dst,
-        255,
-        cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv.THRESH_BINARY,
-        11, // Block size
-        2 // C constant
-      );
+      cv.threshold(gray, dst, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
 
-      // Convert the thresholded image to RGBA format
+      // Convert the thresholded image to RGBA format to display it using canvas
       const rgbaDst = new cv.Mat();
       cv.cvtColor(dst, rgbaDst, cv.COLOR_GRAY2RGBA);
 
@@ -113,31 +105,35 @@ const WebcamCapture = () => {
       issuanceDate: "",
       expirationDate: "",
     };
-    data.firstName = text;
 
-    // const lines = text.split("\n");
-    // for (let i = 0; i < lines.length; i++) {
-    //   if (lines[i].includes("FN")) {
-    //     data.firstName = lines[i].split("FN")[1].trim();
-    //   }
-    //   if (lines[i].includes("LN")) {
-    //     data.lastName = lines[i].split("LN")[1].trim();
-    //     // Assuming the address is immediately below the last name
-    //     if (
-    //       lines[i + 1] &&
-    //       !lines[i + 1].includes("EXP") &&
-    //       !lines[i + 1].includes("ISS")
-    //     ) {
-    //       data.address = lines[i + 1].trim();
-    //     }
-    //   }
-    //   if (lines[i].includes("EXP")) {
-    //     data.expirationDate = lines[i].split("EXP")[1].trim();
-    //   }
-    //   if (lines[i].includes("ISS")) {
-    //     data.issuanceDate = lines[i].split("ISS")[1].trim();
-    //   }
-    // }
+    const lines = text.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      lines[i] = lines[i].toUpperCase();
+      console.log(lines[i].toUpperCase());
+      if (lines[i].includes("LN")) {
+        data.lastName = lines[i].split("LN")[1].trim();
+      }
+      if (lines[i].includes("FN")) {
+        data.firstName = lines[i].split("FN")[1].trim();
+        // Assuming the address is immediately below the last name
+        if (
+          lines[i + 1] &&
+          !lines[i + 1].includes("EXP") &&
+          !lines[i + 1].includes("ISS")
+        ) {
+          data.address = lines[i + 1].trim();
+        }
+      }
+      if (lines[i].includes("EXP")) {
+        data.expirationDate = lines[i].split("EXP")[1].trim();
+      }
+      if (lines[i].includes("ISS")) {
+        if (lines[i + 1]) {
+          const parts = lines[i + 1].trim().split(" ");
+          data.issuanceDate = parts[parts.length - 1];
+        }
+      }
+    }
 
     return data;
   };
