@@ -65,14 +65,14 @@ const WebcamCapture = () => {
       let ksize = new cv.Size(5, 5); // Kernel size
       cv.GaussianBlur(gray, blurred, ksize, 0, 0, cv.BORDER_DEFAULT);
   
-      //  Thresholding
-      const thresholded = new cv.Mat();
-      cv.threshold(blurred, thresholded, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+      // //  Thresholding
+      // const thresholded = new cv.Mat();
+      // cv.threshold(blurred, thresholded, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
   
   
       // Convert the thresholded image to RGBA format to display it using canvas
       const rgbaDst = new cv.Mat();
-      cv.cvtColor(thresholded, rgbaDst, cv.COLOR_GRAY2RGBA);
+      cv.cvtColor(blurred, rgbaDst, cv.COLOR_GRAY2RGBA);
   
       const processedImgData = new ImageData(
         new Uint8ClampedArray(rgbaDst.data),
