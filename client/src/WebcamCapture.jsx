@@ -57,13 +57,13 @@ const WebcamCapture = () => {
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-      // Apply Otsu's thresholding
-      const dst = new cv.Mat();
-      cv.threshold(gray, dst, 125, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+      // // Apply Otsu's thresholding
+      // const dst = new cv.Mat();
+      // cv.threshold(gray, dst, 125, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
 
       // Convert the thresholded image to RGBA format to display it using canvas
       const rgbaDst = new cv.Mat();
-      cv.cvtColor(dst, rgbaDst, cv.COLOR_GRAY2RGBA);
+      cv.cvtColor(gray, rgbaDst, cv.COLOR_GRAY2RGBA);
 
       const processedImgData = new ImageData(
         new Uint8ClampedArray(rgbaDst.data),
