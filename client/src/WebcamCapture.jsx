@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import Webcam from "react-webcam";
 import cv from "@techstark/opencv-js";
+import Tesseract from "tesseract.js";
 
 const WebcamCapture = () => {
   const webcamRef = useRef(null);
@@ -77,6 +78,23 @@ const WebcamCapture = () => {
 
       context.putImageData(processedImgData, 0, 0);
       setImgSrc(canvas.toDataURL());
+
+      // Perform OCR with Tesseract.js
+      Tesseract.recognize(
+        canvas.toDataURL(), // Use the canvas data URL as input
+        "eng", // Language (e.g., English)
+        { logger: (m) => console.log(m) } // Optional logger function
+      )
+        .then(({ data: { text } }) => {
+          console.log("OCR Result:", text); // Print the OCR result to console
+
+          // Here you can call `parseDriverLicenseData` with the `text`
+          const parsedData = parseDriverLicenseData(text);
+          setExtractedData(parsedData); // Update state with parsed data
+        })
+        .catch((err) => {
+          console.error("Error during OCR:", err); // Handle any errors
+        });
 
       // Clean up
       src.delete();
