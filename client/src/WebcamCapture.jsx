@@ -42,85 +42,77 @@ const WebcamCapture = () => {
 
   const preprocessImage = (imageSrc) => {
     const img = new Image();
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    context.drawImage(img, 0, 0);
-
-    const src = cv.imread(canvas);
-    setOcrProcessing(true); // Start OCR processing indicator
-
-    // Convert to grayscale
-    const gray = new cv.Mat();
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-    // Apply Gaussian blur to reduce noise
-    const blurred = new cv.Mat();
-    cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-
-    // Use Otsu's method for thresholding in Canny edge detection
-    const otsuThreshold = cv.threshold(blurred, new cv.Mat(), 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
-    const edges = new cv.Mat();
-    cv.Canny(blurred, edges, 0.1 * otsuThreshold, otsuThreshold);
-
-    // Find contours
-    const contours = new cv.MatVector();
-    const hierarchy = new cv.Mat();
-    cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-    // Find the largest contour
-    let maxArea = 0;
-    let maxContour = null;
-    for (let i = 0; i < contours.size(); i++) {
-      const contour = contours.get(i);
-      const area = cv.contourArea(contour);
-      if (area > maxArea) {
-        maxArea = area;
-        maxContour = contour;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      context.drawImage(img, 0, 0);
+  
+      const src = cv.imread(canvas);
+      setOcrProcessing(true); // Start OCR processing indicator
+  
+      const gray = new cv.Mat();
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+  
+      const blurred = new cv.Mat();
+      cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+  
+      const otsuThreshold = cv.threshold(blurred, new cv.Mat(), 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+      const edges = new cv.Mat();
+      cv.Canny(blurred, edges, 0.1 * otsuThreshold, otsuThreshold);
+  
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
+      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+  
+      let maxArea = 0;
+      let maxContour = null;
+      for (let i = 0; i < contours.size(); i++) {
+        const contour = contours.get(i);
+        const area = cv.contourArea(contour);
+        if (area > maxArea) {
+          maxArea = area;
+          maxContour = contour;
+        }
       }
-    }
-
-    if (maxContour) {
-      const rect = cv.boundingRect(maxContour);
-      const contourArea = rect.width * rect.height;
-      const imageArea = img.width * img.height;
-      const areaRatio = contourArea / imageArea;
-
-      if (areaRatio > 0.3) {
-        // Crop the image to the rectangle if it fills up more than 30% of the original image
-        const cropped = new cv.Mat();
-        const roi = new cv.Rect(rect.x, rect.y, rect.width, rect.height);
-        cropped.push_back(gray.roi(roi));
-        cv.imshow(canvas, cropped); // Display the cropped area
-        cropped.delete();
+  
+      if (maxContour) {
+        const rect = cv.boundingRect(maxContour);
+        const contourArea = rect.width * rect.height;
+        const imageArea = img.width * img.height;
+        const areaRatio = contourArea / imageArea;
+  
+        if (areaRatio > 0.3) {
+          // Crop the image to the rectangle if it fills up more than 30% of the original image
+          const roi = new cv.Rect(rect.x, rect.y, rect.width, rect.height);
+          const cropped = gray.roi(roi);
+          cv.imshow(canvas, cropped); // Display the cropped area
+          processImageWithTesseract(cropped, canvas, context); // Process the cropped area for OCR
+          cropped.delete();
+        } else {
+          // If areaRatio is less than 0.3, proceed with the full grayscale image
+          console.log("Contour found but area is less than 30% of the image. Proceeding with full image OCR.");
+          processImageWithTesseract(gray, canvas, context); // Process the full grayscale image for OCR
+        }
       } else {
-        // Draw a rectangle on the image
-        const color = new cv.Scalar(255, 0, 0, 255);
-        cv.rectangle(gray, new cv.Point(rect.x, rect.y), new cv.Point(rect.x + rect.width, rect.y + rect.height), color, 2);
-        cv.imshow(canvas, gray); // Display the image with the rectangle
+        console.log("No suitable contour found. Proceeding with full image OCR.");
+        processImageWithTesseract(gray, canvas, context); // If no contour is found, process the original grayscale image for OCR
       }
-    } else {
-      console.log("No suitable contour found. Proceeding with full image OCR.");
-      cv.imshow(canvas, gray); // If no contour is found, display the original grayscale image
-    }
-
-    processImageWithTesseract(gray, canvas, context); // Process the image for OCR
-
-    // Cleanup
-    src.delete();
-    gray.delete();
-    blurred.delete();
-    edges.delete();
-    contours.delete();
-    hierarchy.delete();
+  
+      // Cleanup
+      src.delete();
+      gray.delete();
+      blurred.delete();
+      edges.delete();
+      contours.delete();
+      hierarchy.delete();
+    };
+    img.src = imageSrc;
   };
-  img.src = imageSrc;
-};
   
   
-  
+
   
   const processImageWithTesseract = (grayImageMat, canvas, context) => {
     // Make sure canvas size matches the new image dimensions if it was cropped or altered
