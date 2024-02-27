@@ -44,54 +44,58 @@ const WebcamCapture = () => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
       canvas.width = img.width;
       canvas.height = img.height;
-      const context = canvas.getContext("2d");
-      context.drawImage(img, 0, 0, img.width, img.height);
+      context.drawImage(img, 0, 0);
   
       const src = cv.imread(canvas);
-      setOcrProcessing(true); // Indicate OCR processing starts
+      setOcrProcessing(true); // Start OCR processing indicator
   
       // Convert to grayscale
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
   
-      // Apply Gaussian Blur and Canny Edge Detection 
+      // Optional: Apply Gaussian blur to reduce noise
       const blurred = new cv.Mat();
-      cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 1.5, 1.5, cv.BORDER_DEFAULT);
+      cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+  
+      // Apply Canny edge detection
       const edges = new cv.Mat();
-      cv.Canny(blurred, edges, 100, 200);
+      cv.Canny(blurred, edges, 75, 200);
   
       // Find contours
       const contours = new cv.MatVector();
       const hierarchy = new cv.Mat();
       cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
   
-      // Find the largest contour and its bounding rectangle
+      // Find the largest contour
       let maxArea = 0;
-      let bestRect = null;
-      for (let i = 0; i < contours.size(); ++i) {
-        const cnt = contours.get(i);
-        const area = cv.contourArea(cnt, false);
+      let maxContour = null;
+      for (let i = 0; i < contours.size(); i++) {
+        const contour = contours.get(i);
+        const area = cv.contourArea(contour);
         if (area > maxArea) {
           maxArea = area;
-          const rect = cv.boundingRect(cnt);
-          bestRect = rect;
+          maxContour = contour;
         }
       }
   
-      if (bestRect) {
-        // Crop the grayscale image to the largest contour
-        const x = bestRect.x, y = bestRect.y, width = bestRect.width, height = bestRect.height;
-        const roi = new cv.Rect(x, y, width, height);
+      if (maxContour) {
+        // Crop the image to the largest contour (driver's license card)
+        const rect = cv.boundingRect(maxContour);
+        const x = rect.x, y = rect.y, w = rect.width, h = rect.height;
+        const roi = new cv.Rect(x, y, w, h);
         const cropped = gray.roi(roi);
-        // Use the cropped image with the existing processImageWithTesseract function
-        processImageWithTesseract(cropped, canvas, context);
+  
+        // Process cropped image with Tesseract
+        processImageWithTesseract(cropped, canvas, context); // Adjusted to process cropped image
       } else {
-        processImageWithTesseract(gray, canvas, context);
+        console.error("No suitable contour found for cropping.");
+        setOcrProcessing(false); // No contour found, indicate OCR processing is complete
       }
   
-      // Clean up
+      // Cleanup
       src.delete();
       gray.delete();
       blurred.delete();
@@ -101,6 +105,7 @@ const WebcamCapture = () => {
     };
     img.src = imageSrc;
   };
+  
   
   
   const processImageWithTesseract = (grayImageMat, canvas, context) => {
