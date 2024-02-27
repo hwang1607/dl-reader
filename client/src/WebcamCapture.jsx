@@ -14,6 +14,7 @@ const WebcamCapture = () => {
   const [imgSrc, setImgSrc] = useState(null);
   const [webcamError, setWebcamError] = useState(false);
   const [extractedData, setExtractedData] = useState({
+    driversLicenseNumber: "",
     firstName: "",
     lastName: "",
     address: "",
@@ -104,6 +105,7 @@ const WebcamCapture = () => {
 
   const parseDriverLicenseData = (text) => {
     const data = {
+      driversLicenseNumber: "",
       firstName: "",
       lastName: "",
       address: "",
@@ -113,6 +115,7 @@ const WebcamCapture = () => {
   
     const removeSymbolsRegex = /[^a-zA-Z0-9\s,.-]/g;
     const dateRegex = /[^0-9\/]/g;
+    const dlNumberRegex = /[^a-zA-Z0-9]/g; // Regex to keep only letters and numbers
   
     const lines = text.split("\n");
     for (let i = 0; i < lines.length; i++) {
@@ -122,31 +125,31 @@ const WebcamCapture = () => {
       }
       if (lines[i].includes("FN")) {
         data.firstName = lines[i].split("FN")[1].trim().replace(removeSymbolsRegex, '');
-        // Assuming the address is immediately below the last name
-        if (
-          lines[i + 1] &&
-          !lines[i + 1].includes("EXP") &&
-          !lines[i + 1].includes("ISS")
-        ) {
+        if (lines[i + 1] && !lines[i + 1].includes("EXP") && !lines[i + 1].includes("ISS")) {
           data.address = lines[i + 1].trim().replace(removeSymbolsRegex, '');
         }
       }
       if (lines[i].includes("EXP")) {
-        let expText = lines[i].split("EXP")[1].trim(); // Get the text after "EXP"
-        let firstElement = expText.split(" ")[0].replace(dateRegex, ''); // Remove unwanted symbols from date
+        let expText = lines[i].split("EXP")[1].trim();
+        let firstElement = expText.split(" ")[0].replace(dateRegex, '');
         data.expirationDate = firstElement;
       }
       if (lines[i].includes("ISS")) {
         if (lines[i + 1]) {
           const parts = lines[i + 1].trim().split(" ");
-          // Assuming the last part is the date, remove unwanted symbols from it
           data.issuanceDate = parts[parts.length - 1].replace(dateRegex, '');
         }
+      }
+      if (lines[i].includes("DL")) {
+        // Extract the Driver's License number after "DL"
+        let dlText = lines[i].split("DL")[1].trim();
+        data.driversLicenseNumber = dlText.split(" ")[0].replace(dlNumberRegex, ''); // Keep only letters and numbers
       }
     }
   
     return data;
   };
+  
   
 
   const capture = useCallback(() => {
@@ -226,6 +229,9 @@ const WebcamCapture = () => {
       >
         <div style={{ marginTop: "20px", marginBottom: "50px" }}>
           <h3>Extracted Information</h3>
+          <p>
+            <strong>Driver's License Number:</strong> {extractedData.driversLicenseNumber}
+          </p>
           <p>
             <strong>First Name:</strong> {extractedData.firstName}
           </p>
