@@ -82,22 +82,30 @@ const WebcamCapture = () => {
         const contourArea = rect.width * rect.height;
         const imageArea = img.width * img.height;
         const areaRatio = contourArea / imageArea;
-  
+      
+        // Convert the grayscale image to RGBA to draw the rectangle for visualization
+        const color = new cv.Scalar(255, 0, 0, 255);
+        const displayImage = new cv.Mat();
+        cv.cvtColor(gray, displayImage, cv.COLOR_GRAY2RGBA);
+      
         if (areaRatio > 0.3) {
           // Crop the image to the rectangle if it fills up more than 30% of the original image
           const roi = new cv.Rect(rect.x, rect.y, rect.width, rect.height);
           const cropped = gray.roi(roi);
           cv.imshow(canvas, cropped); // Display the cropped area
-          processImageWithTesseract(cropped, canvas, context); // Process the cropped area for OCR
+          processImageWithTesseract(cropped, canvas, context); // Process the cropped image for OCR
           cropped.delete();
         } else {
-          // If areaRatio is less than 0.3, proceed with the full grayscale image
-          console.log("Contour found but area is less than 30% of the image. Proceeding with full image OCR.");
+          // Draw a rectangle on the display image
+          cv.rectangle(displayImage, new cv.Point(rect.x, rect.y), new cv.Point(rect.x + rect.width, rect.y + rect.height), color, 2);
+          cv.imshow(canvas, displayImage); // Display the image with the rectangle
           processImageWithTesseract(gray, canvas, context); // Process the full grayscale image for OCR
         }
+        displayImage.delete();
       } else {
         console.log("No suitable contour found. Proceeding with full image OCR.");
-        processImageWithTesseract(gray, canvas, context); // If no contour is found, process the original grayscale image for OCR
+        cv.imshow(canvas, gray); // If no contour is found, display the original grayscale image
+        processImageWithTesseract(gray, canvas, context); // Process the full grayscale image for OCR
       }
   
       // Cleanup
