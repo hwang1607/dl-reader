@@ -48,59 +48,108 @@ const WebcamCapture = () => {
       canvas.width = img.width;
       canvas.height = img.height;
       context.drawImage(img, 0, 0, img.width, img.height);
-
+  
       const src = cv.imread(canvas);
-
-      setOcrProcessing(true); // Set to true before starting OCR
-
+      setOcrProcessing(true); // Indicate OCR processing is starting
+  
       // Convert the image to grayscale
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-      // // Apply Otsu's thresholding
-      // const dst = new cv.Mat();
-      // cv.threshold(gray, dst, 125, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
-
-      // Convert the thresholded image to RGBA format to display it using canvas
-      const rgbaDst = new cv.Mat();
-      cv.cvtColor(gray, rgbaDst, cv.COLOR_GRAY2RGBA);
-
-      const processedImgData = new ImageData(
-        new Uint8ClampedArray(rgbaDst.data),
-        img.width,
-        img.height
-      );
-
-      context.putImageData(processedImgData, 0, 0);
-      setImgSrc(canvas.toDataURL());
-
-      // Perform OCR with Tesseract.js
-      Tesseract.recognize(
-        canvas.toDataURL(), // Use the canvas data URL as input
-        "eng", // Language (e.g., English)
-        { logger: (m) => console.log(m) } // Optional logger function
-      )
-        .then(({ data: { text } }) => {
-          console.log("OCR Result:", text); // Print the OCR result to console
-
-          // Here you can call `parseDriverLicenseData` with the `text`
+  
+      // Apply edge detection to find contours
+      const edges = new cv.Mat();
+      cv.Canny(gray, edges, 100, 200, 3, false);
+      let contours = new cv.MatVector();
+      let hierarchy = new cv.Mat();
+      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+  
+      // Find the largest contour and its bounding box
+      let maxArea = 0;
+      let maxContour = null;
+      for (let i = 0; i < contours.size(); i++) {
+        const contour = contours.get(i);
+        const area = cv.contourArea(contour);
+        if (area > maxArea) {
+          maxArea = area;
+          maxContour = contour;
+        }
+      }
+  
+      if (maxContour != null) {
+        const boundingRect = cv.boundingRect(maxContour);
+        const x = boundingRect.x;
+        const y = boundingRect.y;
+        const width = boundingRect.width;
+        const height = boundingRect.height;
+  
+        // Crop the grayscale image using the bounding rectangle of the largest contour
+        const roi = gray.roi(new cv.Rect(x, y, width, height));
+  
+        // Use the cropped image for further processing
+        cv.imshow(canvas, roi); // Display the cropped grayscale image for verification
+        setImgSrc(canvas.toDataURL()); // Update the displayed image
+  
+        // Perform OCR with Tesseract.js on the cropped image
+        Tesseract.recognize(
+          canvas.toDataURL(),
+          "eng",
+          { logger: (m) => console.log(m) }
+        ).then(({ data: { text } }) => {
+          console.log("OCR Result:", text);
           const parsedData = parseDriverLicenseData(text);
           setExtractedData(parsedData); // Update state with parsed data
-          setOcrProcessing(false); // Set to false after OCR completes
-        })
-        .catch((err) => {
-          console.error("Error during OCR:", err); // Handle any errors
-          setOcrProcessing(false); // Set to false after OCR completes
+          setOcrProcessing(false); // Indicate OCR processing is complete
+        }).catch((err) => {
+          console.error("Error during OCR:", err);
+          setOcrProcessing(false); // Handle errors in OCR processing
         });
-
-      // Clean up
+  
+        roi.delete(); // Clean up the cropped Mat
+      } else {
+        // If no contour is found, proceed with the original grayscale image
+        processImageWithTesseract(gray, canvas, context);
+      }
+  
+      // Cleanup
       src.delete();
       gray.delete();
-      dst.delete();
-      rgbaDst.delete();
+      edges.delete();
+      contours.delete();
+      hierarchy.delete();
     };
     img.src = imageSrc;
   };
+  
+  const processImageWithTesseract = (grayImageMat, canvas, context) => {
+    // Convert the grayscale image to RGBA format to display it using canvas
+    const rgbaDst = new cv.Mat();
+    cv.cvtColor(grayImageMat, rgbaDst, cv.COLOR_GRAY2RGBA);
+    const processedImgData = new ImageData(
+      new Uint8ClampedArray(rgbaDst.data),
+      canvas.width,
+      canvas.height
+    );
+    context.putImageData(processedImgData, 0, 0);
+    setImgSrc(canvas.toDataURL());
+  
+    // The rest of the OCR processing using Tesseract.js
+    Tesseract.recognize(
+      canvas.toDataURL(),
+      "eng",
+      { logger: (m) => console.log(m) }
+    ).then(({ data: { text } }) => {
+      console.log("OCR Result:", text);
+      const parsedData = parseDriverLicenseData(text);
+      setExtractedData(parsedData); // Update state with parsed data
+      setOcrProcessing(false); // Indicate OCR processing is complete
+    }).catch((err) => {
+      console.error("Error during OCR:", err);
+      setOcrProcessing(false); // Handle errors in OCR processing
+    });
+  
+    rgbaDst.delete(); // Clean up
+  };
+  
 
   const parseDriverLicenseData = (text) => {
     const data = {
