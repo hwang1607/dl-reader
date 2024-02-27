@@ -57,9 +57,9 @@ const WebcamCapture = () => {
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-      // Apply Otsu's thresholding
+      // Apply adaptive mean thresholding
       const dst = new cv.Mat();
-      cv.threshold(gray, dst, 125, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+      cv.adaptiveThreshold(gray, dst, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 15, -2);
 
       // Convert the thresholded image to RGBA format to display it using canvas
       const rgbaDst = new cv.Mat();
