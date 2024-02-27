@@ -82,11 +82,11 @@ const WebcamCapture = () => {
       }
   
       if (maxContour) {
-        // Draw a rectangle around the largest contour
+        // Draw a rectangle around the largest contour directly on the grayscale image before OCR
         const rect = cv.boundingRect(maxContour);
-        context.strokeStyle = 'green';
-        context.lineWidth = 2;
-        context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        const color = new cv.Scalar(255, 0, 0, 255); 
+        cv.rectangle(gray, new cv.Point(rect.x, rect.y), new cv.Point(rect.x + rect.width, rect.y + rect.height), color, 2);
+        // Now gray contains the image with the rectangle
       } else {
         console.log("No suitable contour found. Proceeding with full image OCR.");
       }
