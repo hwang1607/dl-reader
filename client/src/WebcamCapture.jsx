@@ -113,30 +113,31 @@ const WebcamCapture = () => {
       issuanceDate: "",
       expirationDate: "",
     };
+    data.firstName = text;
 
-    const lines = text.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes("FN")) {
-        data.firstName = lines[i].split("FN")[1].trim();
-      }
-      if (lines[i].includes("LN")) {
-        data.lastName = lines[i].split("LN")[1].trim();
-        // Assuming the address is immediately below the last name
-        if (
-          lines[i + 1] &&
-          !lines[i + 1].includes("EXP") &&
-          !lines[i + 1].includes("ISS")
-        ) {
-          data.address = lines[i + 1].trim();
-        }
-      }
-      if (lines[i].includes("EXP")) {
-        data.expirationDate = lines[i].split("EXP")[1].trim();
-      }
-      if (lines[i].includes("ISS")) {
-        data.issuanceDate = lines[i].split("ISS")[1].trim();
-      }
-    }
+    // const lines = text.split("\n");
+    // for (let i = 0; i < lines.length; i++) {
+    //   if (lines[i].includes("FN")) {
+    //     data.firstName = lines[i].split("FN")[1].trim();
+    //   }
+    //   if (lines[i].includes("LN")) {
+    //     data.lastName = lines[i].split("LN")[1].trim();
+    //     // Assuming the address is immediately below the last name
+    //     if (
+    //       lines[i + 1] &&
+    //       !lines[i + 1].includes("EXP") &&
+    //       !lines[i + 1].includes("ISS")
+    //     ) {
+    //       data.address = lines[i + 1].trim();
+    //     }
+    //   }
+    //   if (lines[i].includes("EXP")) {
+    //     data.expirationDate = lines[i].split("EXP")[1].trim();
+    //   }
+    //   if (lines[i].includes("ISS")) {
+    //     data.issuanceDate = lines[i].split("ISS")[1].trim();
+    //   }
+    // }
 
     return data;
   };
