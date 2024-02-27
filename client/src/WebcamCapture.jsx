@@ -20,6 +20,7 @@ const WebcamCapture = () => {
     issuanceDate: "",
     expirationDate: "",
   });
+  const [ocrProcessing, setOcrProcessing] = useState(false); // State to track OCR processing
 
   useEffect(() => {
     cv.onRuntimeInitialized = () => {
@@ -49,6 +50,8 @@ const WebcamCapture = () => {
       context.drawImage(img, 0, 0, img.width, img.height);
 
       const src = cv.imread(canvas);
+
+      setOcrProcessing(true); // Set to true before starting OCR
 
       // Convert the image to grayscale
       const gray = new cv.Mat();
@@ -83,9 +86,11 @@ const WebcamCapture = () => {
           // Here you can call `parseDriverLicenseData` with the `text`
           const parsedData = parseDriverLicenseData(text);
           setExtractedData(parsedData); // Update state with parsed data
+          setOcrProcessing(false); // Set to false after OCR completes
         })
         .catch((err) => {
           console.error("Error during OCR:", err); // Handle any errors
+          setOcrProcessing(false); // Set to false after OCR completes
         });
 
       // Clean up
@@ -109,7 +114,6 @@ const WebcamCapture = () => {
     const lines = text.split("\n");
     for (let i = 0; i < lines.length; i++) {
       lines[i] = lines[i].toUpperCase();
-      console.log(lines[i].toUpperCase());
       if (lines[i].includes("LN")) {
         data.lastName = lines[i].split("LN")[1].trim();
       }
@@ -125,7 +129,9 @@ const WebcamCapture = () => {
         }
       }
       if (lines[i].includes("EXP")) {
-        data.expirationDate = lines[i].split("EXP")[1].trim();
+        let expText = lines[i].split("EXP")[1].trim(); // Get the text after "EXP"
+        let firstElement = expText.split(" ")[0]; // Split by spaces and take the first element
+        data.expirationDate = firstElement;
       }
       if (lines[i].includes("ISS")) {
         if (lines[i + 1]) {
@@ -147,6 +153,21 @@ const WebcamCapture = () => {
 
   return (
     <Fragment>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        {ocrProcessing ? ( // Display a message based on the OCR processing state
+          <div style={{ marginTop: "2vh", marginBottom: "2vh" }}>
+            Processing image...
+          </div>
+        ) : (
+          <div style={{ marginTop: "2vh", marginBottom: "2vh" }}>&nbsp;</div>
+        )}
+      </div>
       <div className="button-container">
         <button
           onClick={capture}
