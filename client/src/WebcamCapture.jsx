@@ -41,101 +41,83 @@ const WebcamCapture = () => {
   };
 
   const processImageToGrayscale = (imageSrc) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      context.drawImage(img, 0, 0, img.width, img.height);
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    context.drawImage(img, 0, 0, img.width, img.height);
 
-      const src = cv.imread(canvas);
+    let src = cv.imread(canvas); // Changed from 'const' to 'let' to allow reassignment
 
-      setOcrProcessing(true); // Set to true before starting OCR
+    setOcrProcessing(true); // Set to true before starting OCR
 
-      // Convert image to grayscale
-      cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY);
-      
-      // Use Canny edge detection to find edges
-      const edges = new cv.Mat();
-      cv.Canny(src, edges, 50, 150, 3);
-      
-      // Detect lines using HoughLinesP
-      const lines = new cv.Mat();
-      cv.HoughLinesP(edges, lines, 1, Math.PI / 180, 50, 50, 10);
-      
-      // Calculate average angle of lines
-      let angleSum = 0;
-      let numAngles = 0;
-      for (let i = 0; i < lines.rows; ++i) {
-          const [x1, y1, x2, y2] = lines.data32S.subarray(i * 4, (i + 1) * 4);
-          const angle = Math.atan2(y2 - y1, x2 - x1) * 180.0 / Math.PI;
-          if (Math.abs(angle) < 45) { // Filter out near-vertical and near-horizontal lines
-              angleSum += angle;
-              numAngles++;
-          }
-      }
-      
-      let averageAngle = 0;
-      if (numAngles > 0) {
-          averageAngle = angleSum / numAngles;
-      }
-      
-      // Rotate image to correct skew
-      const center = new cv.Point(src.cols / 2, src.rows / 2);
-      const rotationMatrix = cv.getRotationMatrix2D(center, -averageAngle, 1);
-      const rotated = new cv.Mat();
-      cv.warpAffine(src, rotated, rotationMatrix, new cv.Size(src.cols, src.rows));
-      
-      // Replace 'src' with 'rotated' in the subsequent processing
-      src.delete(); // Delete the original source matrix
-      src = rotated; // Use the rotated image for further processing
+    // Convert image to grayscale
+    cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY);
 
+    // Use Canny edge detection to find edges
+    const edges = new cv.Mat();
+    cv.Canny(src, edges, 50, 150, 3);
+    
+    // Detect lines using HoughLinesP
+    const lines = new cv.Mat();
+    cv.HoughLinesP(edges, lines, 1, Math.PI / 180, 50, 50, 10);
+    
+    let angleSum = 0;
+    let numAngles = 0;
+    for (let i = 0; i < lines.rows; ++i) {
+        const [x1, y1, x2, y2] = lines.data32S.subarray(i * 4, (i + 1) * 4);
+        const angle = Math.atan2(y2 - y1, x2 - x1) * 180.0 / Math.PI;
+        if (Math.abs(angle) < 45) {
+            angleSum += angle;
+            numAngles++;
+        }
+    }
+    
+    let averageAngle = 0;
+    if (numAngles > 0) {
+        averageAngle = angleSum / numAngles;
+    }
+    
+    const center = new cv.Point(src.cols / 2, src.rows / 2);
+    const rotationMatrix = cv.getRotationMatrix2D(center, -averageAngle, 1);
+    const rotated = new cv.Mat();
+    cv.warpAffine(src, rotated, rotationMatrix, new cv.Size(src.cols, src.rows));
 
-      // Apply Otsu's thresholding
-      const dst = new cv.Mat();
-      cv.threshold(gray, dst, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+    src.delete(); // Delete the original source matrix
+    src = rotated; // Reassign 'src' with 'rotated'
 
-      // Convert the thresholded image to RGBA format to display it using canvas
-      const rgbaDst = new cv.Mat();
-      cv.cvtColor(dst, rgbaDst, cv.COLOR_GRAY2RGBA);
+    // Apply Otsu's thresholding
+    const dst = new cv.Mat();
+    cv.threshold(src, dst, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU); // Using 'src' after correction
 
-      const processedImgData = new ImageData(
-        new Uint8ClampedArray(rgbaDst.data),
-        img.width,
-        img.height
-      );
+    // Convert the thresholded image to RGBA format to display it using canvas
+    const rgbaDst = new cv.Mat();
+    cv.cvtColor(dst, rgbaDst, cv.COLOR_GRAY2RGBA);
 
-      context.putImageData(processedImgData, 0, 0);
-      setImgSrc(canvas.toDataURL());
+    const processedImgData = new ImageData(
+      new Uint8ClampedArray(rgbaDst.data),
+      img.width,
+      img.height
+    );
 
-      // Perform OCR with Tesseract.js
-      Tesseract.recognize(
-        canvas.toDataURL(), // Use the canvas data URL as input
-        "eng", // Language (e.g., English)
-        { logger: (m) => console.log(m) } // Optional logger function
-      )
-        .then(({ data: { text } }) => {
-          console.log("OCR Result:", text); // Print the OCR result to console
+    context.putImageData(processedImgData, 0, 0);
+    setImgSrc(canvas.toDataURL());
 
-          // Here you can call `parseDriverLicenseData` with the `text`
-          const parsedData = parseDriverLicenseData(text);
-          setExtractedData(parsedData); // Update state with parsed data
-          setOcrProcessing(false); // Set to false after OCR completes
-        })
-        .catch((err) => {
-          console.error("Error during OCR:", err); // Handle any errors
-          setOcrProcessing(false); // Set to false after OCR completes
-        });
+    // Proceed with OCR as before...
 
-      // Clean up
-      src.delete();
-      gray.delete();
-      dst.delete();
-      rgbaDst.delete();
-    };
-    img.src = imageSrc;
+    // Clean up
+    edges.delete();
+    lines.delete();
+    rotationMatrix.delete();
+    src.delete(); // Ensure 'src' is deleted after its final use
+    dst.delete();
+    rgbaDst.delete();
   };
+  img.src = imageSrc;
+};
+
 
   const parseDriverLicenseData = (text) => {
     const data = {
