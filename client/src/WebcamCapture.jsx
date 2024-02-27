@@ -67,7 +67,7 @@ const WebcamCapture = () => {
   
       //  Thresholding
       const thresholded = new cv.Mat();
-      cv.threshold(denoised, thresholded, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+      cv.threshold(blurred, thresholded, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
   
   
       // Convert the thresholded image to RGBA format to display it using canvas
