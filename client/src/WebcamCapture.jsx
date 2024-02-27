@@ -104,13 +104,19 @@ const WebcamCapture = () => {
   
   
   const processImageWithTesseract = (grayImageMat, canvas, context) => {
+    // Make sure canvas size matches the new image dimensions if it was cropped or altered
+    canvas.width = grayImageMat.cols;
+    canvas.height = grayImageMat.rows;
+
     // Convert the grayscale image to RGBA format to display it using canvas
     const rgbaDst = new cv.Mat();
     cv.cvtColor(grayImageMat, rgbaDst, cv.COLOR_GRAY2RGBA);
+
+    // Ensure the processedImgData is correctly sized for the canvas
     const processedImgData = new ImageData(
       new Uint8ClampedArray(rgbaDst.data),
-      canvas.width,
-      canvas.height
+      canvas.width,  // Use updated width
+      canvas.height  // Use updated height
     );
     context.putImageData(processedImgData, 0, 0);
     setImgSrc(canvas.toDataURL());
