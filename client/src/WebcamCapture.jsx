@@ -56,7 +56,7 @@ const WebcamCapture = () => {
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
   
-      // Optional: Apply Gaussian blur to reduce noise??
+      // Apply Gaussian blur
       const blurred = new cv.Mat();
       cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
   
@@ -69,24 +69,26 @@ const WebcamCapture = () => {
       const hierarchy = new cv.Mat();
       cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
   
-      // Find the largest contour
       let maxArea = 0;
       let maxContour = null;
+      const imageArea = img.width * img.height;
+      const minContourArea = imageArea * 0.40; // Set minimum contour area as 10% of the image area
+  
       for (let i = 0; i < contours.size(); i++) {
         const contour = contours.get(i);
         const area = cv.contourArea(contour);
-        if (area > maxArea) {
+        if (area > maxArea && area > minContourArea) {
           maxArea = area;
           maxContour = contour;
         }
       }
   
       if (maxContour) {
-        // Draw a rectangle around the largest contour directly on the grayscale image before OCR
+        // Draw a rectangle around the largest contour
         const rect = cv.boundingRect(maxContour);
-        const color = new cv.Scalar(255, 0, 0, 255); 
-        cv.rectangle(gray, new cv.Point(rect.x, rect.y), new cv.Point(rect.x + rect.width, rect.y + rect.height), color, 2);
-        // Now gray contains the image with the rectangle
+        context.strokeStyle = 'green';
+        context.lineWidth = 2;
+        context.strokeRect(rect.x, rect.y, rect.width, rect.height);
       } else {
         console.log("No suitable contour found. Proceeding with full image OCR.");
       }
@@ -103,6 +105,7 @@ const WebcamCapture = () => {
     };
     img.src = imageSrc;
   };
+  
   
   
   
