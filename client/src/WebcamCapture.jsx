@@ -110,39 +110,44 @@ const WebcamCapture = () => {
       issuanceDate: "",
       expirationDate: "",
     };
-
+  
+    const removeSymbolsRegex = /[^a-zA-Z0-9\s,.-]/g;
+    const dateRegex = /[^0-9\/]/g;
+  
     const lines = text.split("\n");
     for (let i = 0; i < lines.length; i++) {
       lines[i] = lines[i].toUpperCase();
       if (lines[i].includes("LN")) {
-        data.lastName = lines[i].split("LN")[1].trim();
+        data.lastName = lines[i].split("LN")[1].trim().replace(removeSymbolsRegex, '');
       }
       if (lines[i].includes("FN")) {
-        data.firstName = lines[i].split("FN")[1].trim();
+        data.firstName = lines[i].split("FN")[1].trim().replace(removeSymbolsRegex, '');
         // Assuming the address is immediately below the last name
         if (
           lines[i + 1] &&
           !lines[i + 1].includes("EXP") &&
           !lines[i + 1].includes("ISS")
         ) {
-          data.address = lines[i + 1].trim();
+          data.address = lines[i + 1].trim().replace(removeSymbolsRegex, '');
         }
       }
       if (lines[i].includes("EXP")) {
         let expText = lines[i].split("EXP")[1].trim(); // Get the text after "EXP"
-        let firstElement = expText.split(" ")[0]; // Split by spaces and take the first element
+        let firstElement = expText.split(" ")[0].replace(dateRegex, ''); // Remove unwanted symbols from date
         data.expirationDate = firstElement;
       }
       if (lines[i].includes("ISS")) {
         if (lines[i + 1]) {
           const parts = lines[i + 1].trim().split(" ");
-          data.issuanceDate = parts[parts.length - 1];
+          // Assuming the last part is the date, remove unwanted symbols from it
+          data.issuanceDate = parts[parts.length - 1].replace(dateRegex, '');
         }
       }
     }
-
+  
     return data;
   };
+  
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current.getScreenshot();
