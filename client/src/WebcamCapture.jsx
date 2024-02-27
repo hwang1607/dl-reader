@@ -56,7 +56,7 @@ const WebcamCapture = () => {
       const gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
   
-      // Optional: Apply Gaussian blur to reduce noise
+      // Optional: Apply Gaussian blur to reduce noise??
       const blurred = new cv.Mat();
       cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
   
@@ -82,18 +82,16 @@ const WebcamCapture = () => {
       }
   
       if (maxContour) {
-        // Crop the image to the largest contour (driver's license card)
+        // Draw a rectangle around the largest contour
         const rect = cv.boundingRect(maxContour);
-        const x = rect.x, y = rect.y, w = rect.width, h = rect.height;
-        const roi = new cv.Rect(x, y, w, h);
-        const cropped = gray.roi(roi);
-  
-        // Process cropped image with Tesseract
-        processImageWithTesseract(cropped, canvas, context); // Adjusted to process cropped image
+        context.strokeStyle = 'green';
+        context.lineWidth = 2;
+        context.strokeRect(rect.x, rect.y, rect.width, rect.height);
       } else {
-        console.error("No suitable contour found for cropping.");
-        setOcrProcessing(false); // No contour found, indicate OCR processing is complete
+        console.log("No suitable contour found. Proceeding with full image OCR.");
       }
+  
+      processImageWithTesseract(gray, canvas, context); // Process the entire image if no specific cropping is done
   
       // Cleanup
       src.delete();
