@@ -59,7 +59,7 @@ const WebcamCapture = () => {
 
       // Apply Otsu's thresholding
       const dst = new cv.Mat();
-      cv.threshold(gray, dst, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+      cv.threshold(gray, dst, 125, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
 
       // Convert the thresholded image to RGBA format to display it using canvas
       const rgbaDst = new cv.Mat();
