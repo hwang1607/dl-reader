@@ -2,7 +2,7 @@
 
 https://dl-reader.netlify.app/
 
-This is a simple driver’s license reader that uses OpenCV and Tesseract to read text. It is built with ReactJS, react-webcam, OpenCV.js, and Tesseract.js.
+This is a simple driver’s license reader that uses OpenCV and Tesseract to read text. It's built with ReactJS, react-webcam, OpenCV.js, and Tesseract.js.
 
 The website scales correctly with differing screen sizes and can be used on mobile devices. It allows webcam screenshots using react-webcam or direct file uploads.
 
