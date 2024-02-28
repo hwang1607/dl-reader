@@ -100,7 +100,7 @@ const WebcamCapture = () => {
         const rectArea = rect.width * rect.height;
         const areaRatio = rectArea / imageArea;
 
-        if (areaRatio > 0.4) {
+        if (areaRatio > 0.3) {
           // Crop if the area is more than 30% of the image size
           let roi = gray.roi(rect);
           gray.delete(); // Delete the old gray image to free memory
