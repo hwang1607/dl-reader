@@ -58,7 +58,7 @@ const WebcamCapture = () => {
 
       // Apply Gaussian blur to reduce noise
       const blurred = new cv.Mat();
-      cv.GaussianBlur(gray, blurred, new cv.Size(1, 1), 0);
+      cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
 
       // Use Otsu's method to find a global threshold and apply it in Canny edge detection
       const otsuThreshold = cv.threshold(
@@ -98,15 +98,15 @@ const WebcamCapture = () => {
         const rect = cv.boundingRect(maxContour);
         const imageArea = img.width * img.height;
         const rectArea = rect.width * rect.height;
-        const areaRatio = rectArea / imageArea;
+        const areaRatio = rectArea / imageArea; // Calculate image area and ratio
 
         if (areaRatio > 0.3) {
           // Crop if the area is more than 30% of the image size
           let roi = gray.roi(rect);
-          gray.delete(); // Delete the old gray image to free memory
+          gray.delete();
           gray = roi.clone(); // Use the cropped area as the new gray image
           roi.delete(); // Clean up the temporary ROI
-          // Note: The rectangle is not drawn in this case because we crop to the ROI
+          // Rectangle is not drawn in this case
         } else {
           // Draw the rectangle on the original gray image
           const color = new cv.Scalar(255, 0, 0, 255);
@@ -119,14 +119,11 @@ const WebcamCapture = () => {
           );
         }
       } else {
-        console.log(
-          "No suitable contour found. Proceeding with full image OCR."
-        );
+        console.log("No contour found.");
       }
 
-      processImageWithTesseract(gray, canvas, context); // Process the entire image if no specific cropping is done
+      processImageWithTesseract(gray, canvas, context); // Process the entire image regardless of crop
 
-      // Cleanup
       src.delete();
       gray.delete();
       blurred.delete();
@@ -154,7 +151,6 @@ const WebcamCapture = () => {
     context.putImageData(processedImgData, 0, 0);
     setImgSrc(canvas.toDataURL());
 
-    // The rest of the OCR processing using Tesseract.js
     Tesseract.recognize(canvas.toDataURL(), "eng")
       .then(({ data: { text } }) => {
         console.log("OCR Result:", text);
@@ -164,10 +160,10 @@ const WebcamCapture = () => {
       })
       .catch((err) => {
         console.error("Error during OCR:", err);
-        setOcrProcessing(false); // Handle errors in OCR processing
+        setOcrProcessing(false);
       });
 
-    rgbaDst.delete(); // Clean up
+    rgbaDst.delete();
   };
 
   const parseDriverLicenseData = (text) => {
@@ -213,7 +209,7 @@ const WebcamCapture = () => {
       if (lines[i].includes("ISS")) {
         if (lines[i + 1]) {
           const parts = lines[i + 1].trim().split(" ");
-          // Assuming the last part is the date, remove unwanted symbols from it
+          // Assuming the last part is the date, remove unwanted symbols
           data.issuanceDate = parts[parts.length - 1].replace(dateRegex, "");
         }
       }
@@ -273,7 +269,7 @@ const WebcamCapture = () => {
               audio={false}
               ref={webcamRef}
               forceScreenshotSourceSize
-              videoConstraints={{ facingMode: "environment" }} // This line requests the rear camera
+              videoConstraints={{ facingMode: "environment" }} // Request the rear camera if on mobile
               screenshotFormat="image/jpeg"
               width="100%"
               height="100%"
