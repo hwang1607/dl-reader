@@ -58,7 +58,10 @@ const WebcamCapture = () => {
 
       // Apply Gaussian blur to reduce noise
       const blurred = new cv.Mat();
-      cv.GaussianBlur(gray, blurred, new cv.Size(3, 3), 0);
+      cv.GaussianBlur(gray, blurred, new cv.Size(1, 1), 0);
+
+      gray.delete();
+      gray = blurred.clone();
 
       // Use Otsu's method to find a global threshold and apply it in Canny edge detection
       const otsuThreshold = cv.threshold(
