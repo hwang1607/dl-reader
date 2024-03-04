@@ -64,9 +64,10 @@ const WebcamCapture = () => {
       gray = blurred.clone();
 
       // Use Otsu's method to find a global threshold and apply it in Canny edge detection
+      const thresholded = new cv.Mat();
       const otsuThreshold = cv.threshold(
         blurred,
-        new cv.Mat(),
+        thresholded,
         0,
         255,
         cv.THRESH_BINARY | cv.THRESH_OTSU
@@ -126,10 +127,12 @@ const WebcamCapture = () => {
       }
 
       processImageWithTesseract(gray, canvas, context); // Process the entire image regardless of crop
+      setImgSrc(canvas.toDataURL());
 
       src.delete();
       gray.delete();
       blurred.delete();
+      thresholded.delete();
       edges.delete();
       contours.delete();
       hierarchy.delete();
@@ -137,7 +140,6 @@ const WebcamCapture = () => {
     img.src = imageSrc;
   };
   const processImageWithTesseract = (grayImageMat, canvas, context) => {
-    // Make sure canvas size matches the new image dimensions if it was cropped or altered
     canvas.width = grayImageMat.cols;
     canvas.height = grayImageMat.rows;
 
@@ -148,24 +150,37 @@ const WebcamCapture = () => {
     // Ensure the processedImgData is correctly sized for the canvas
     const processedImgData = new ImageData(
       new Uint8ClampedArray(rgbaDst.data),
-      canvas.width, // Use updated width
-      canvas.height // Use updated height
+      canvas.width,
+      canvas.height
     );
     context.putImageData(processedImgData, 0, 0);
-    setImgSrc(canvas.toDataURL());
 
-    Tesseract.recognize(canvas.toDataURL(), "eng")
-      .then(({ data: { text } }) => {
-        console.log("OCR Result:", text);
-        const parsedData = parseDriverLicenseData(text);
-        setExtractedData(parsedData); // Update state with parsed data
-        setOcrProcessing(false); // Indicate OCR processing is complete
+    // Indicate OCR processing starts
+    setOcrProcessing(true);
+
+    // Convert canvas to Blob, then send it to the server
+    canvas.toBlob((blob) => {
+      const formData = new FormData();
+      formData.append("image", blob, "image.jpg");
+
+      fetch("http://localhost:3001/upload", {
+        method: "POST",
+        body: formData,
       })
-      .catch((err) => {
-        console.error("Error during OCR:", err);
-        setOcrProcessing(false);
-      });
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("OCR Result:", data.text); // Assuming the server responds with an object containing the text
+          const parsedData = parseDriverLicenseData(data.text);
+          setExtractedData(parsedData); // Update state with parsed data
+          setOcrProcessing(false); // Indicate OCR processing is complete
+        })
+        .catch((error) => {
+          console.error("Error during OCR:", error);
+          setOcrProcessing(false);
+        });
+    }, "image/jpeg");
 
+    // Clean up OpenCV resources
     rgbaDst.delete();
   };
 
