@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import Webcam from "react-webcam";
 import cv from "@techstark/opencv-js";
-import Tesseract from "tesseract.js";
 
 const WebcamCapture = () => {
   const webcamRef = useRef(null);
